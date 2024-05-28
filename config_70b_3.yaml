@@ -1,0 +1,89 @@
+description: training_llama2_70b_3
+
+target:
+  # service: aml
+  service: sing
+  # name: A100-80-WUS3-2 # 8 * 80g GPUs
+  # name: A100-80-WUS3 # 8 * 80g GPUs
+  # name: tscience-a100-80g-eastus # 8 * 80g GPUs
+  # name: A100-80G-PCIE-westus3 # 4 * 80g GPUs
+  # name: a100-40g-westus3 # 8 * 40g GPUs
+  # name: aims-A100-swiss-west # 8 * 80g GPUs
+  # name: aims-sing-east-us2 # 8*80G H100 GPUs
+  # name: aims-sing-res-sw-02
+  # name: aims-sing-res-wus3-02
+  # name: GenAI-Shared-UKSouth
+  # name: GenAI-Shared-WestEuro
+  name: GenAI-Shared-CanadaCtr
+
+environment:
+  # image: huggingface/transformers-pytorch-gpu:4.35.2
+  # image: huggingface/transformers-pytorch-deepspeed-latest-gpu:latest
+  # image: amlt-sing/acpt-2.1.0-cuda12.1
+  # image: zebgou/rpt:23.12.10
+  image: mastervito/pytorch-deepspeed-cu120:latest
+  registry: docker.io # any public registry can be specified here
+  setup:
+    # - nvcc -V
+    # - ls /usr/local
+    # - pip install packaging # ==22.0
+    # - pip install torch # ==2.2.1+cu121 #--index-url https://download.pytorch.org/whl/cu118 # CUDA 11.8 for example
+    - pip install -r ./src/requirements_cluster.txt
+    - pip install transformers==4.38.2 # 4.31.0
+    - pip install tokenizers==0.15.2
+    - pip install -U flash_attn
+    # - pip install flash-attn
+    # # - pip install torch==2.1.2 torchvision==0.16.2 torchaudio==2.1.2 --index-url https://download.pytorch.org/whl/cu121 --user
+    # - pip install datasets numpy tensorboard jsonlines ujson --user
+    # - pip install transformers==4.36.0 --user
+    # # - pip install mosaicml-streaming==0.4.1 --user
+    # # - pip install hydra-core==1.3.0 --user
+    # # - pip install omegaconf>=2.0.0 --user
+    # # - pip install deepspeed --user
+    # # - pip install deepspeed==0.12.6 --user
+    # - pip install accelerate --user
+    # - pip install xformers==0.0.23 --user
+    # # - pip uninstall deepspeed --user
+    # - pip install deepspeed --user
+    # - pip install einops>=0.3.0 --user
+    # # - pip install webdataset --user
+    # # - pip install dalle-pytorch --user
+    # - pip install nltk --user
+    # # - pip install diffusers[torch] --user
+    # # - pip install pytorch_lightning==1.9 --user
+    # - pip install flash-attn --no-build-isolation --user
+    # - pip install accelerate --user
+    # - pip install peft --user
+    # - pip install wandb --user
+    # - pip install fire --user
+    # - pip install sentencepiece --user
+    # - pip install zstandard --user
+    # - pip install torchinfo --user
+    # # - export TORCH_DISTRIBUTED_DEBUG=DETAIL
+
+code:
+  # local directory of the code. this will be uploaded to the server.
+  # $CONFIG_DIR is expanded to the directory of this config file
+  local_dir: $CONFIG_DIR
+  remote_dir: xinzhe/tora
+
+storage:
+  output:
+    storage_account_name: yeyunmain
+    container_name: xinzhe
+    mount_dir: /mnt/blob_nixinzhe
+
+jobs:
+- name: training_llama2_70b_3 # issue78-datareweight-pretrain-dmr_v11_1
+  # sku: 1x80G8
+  sku: 1xG8-H100-IB
+  sla_tier: Premium
+  # sla_tier: Standard
+  # reference: https://amulet-docs.azurewebsites.net/main/advanced/51_distributed.html
+  command:
+    - bash ./src/scripts/run_70b_3.sh
+  
+  process_count_per_node: 1
+  submit_args:
+    env:
+      {"NCCL_DEBUG": "INFO"}
